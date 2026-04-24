@@ -3,6 +3,7 @@ package com.greengrub.food_request.dto;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import java.time.LocalDateTime;
 
 public class FoodRequestDTO {
 
@@ -18,6 +19,8 @@ public class FoodRequestDTO {
 
     @NotBlank(message = "Status cannot be blank")
     private String status;
+
+    private LocalDateTime requestDate;
 
     // Default constructor
     public FoodRequestDTO() {
@@ -63,5 +66,13 @@ public class FoodRequestDTO {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public LocalDateTime getRequestDate() {
+        return requestDate;
+    }
+
+    public void setRequestDate(LocalDateTime requestDate) {
+        this.requestDate = requestDate;
     }
 }

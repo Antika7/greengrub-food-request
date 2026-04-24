@@ -1,5 +1,6 @@
 package com.greengrub.food_request.service;
 
+import com.greengrub.food_request.exception.ResourceNotFoundException;
 import com.greengrub.food_request.model.FoodRequest;
 import com.greengrub.food_request.repository.FoodRequestRepository;
 import com.greengrub.food_request.service.impl.FoodRequestService;
@@ -26,31 +27,29 @@ public class FoodRequestServiceImpl implements FoodRequestService {
 
     @Override
     public FoodRequest getFoodRequestById(Long id) {
-        // Returns the entity if found, otherwise returns null
-        return foodRequestRepository.findById(id).orElse(null);
+        return foodRequestRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("FoodRequest not found with id: " + id));
     }
 
     @Override
     public FoodRequest updateFoodRequest(Long id, FoodRequest request) {
-        FoodRequest existingRequest = foodRequestRepository.findById(id).orElse(null);
+        FoodRequest existingRequest = foodRequestRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("FoodRequest not found with id: " + id));
 
-        if (existingRequest != null) {
-            // Update the fields
-            existingRequest.setFoodName(request.getFoodName());
-            existingRequest.setQuantity(request.getQuantity());
-            existingRequest.setRequestedBy(request.getRequestedBy());
-            existingRequest.setRequestDate(request.getRequestDate());
-            existingRequest.setStatus(request.getStatus());
+        existingRequest.setFoodName(request.getFoodName());
+        existingRequest.setQuantity(request.getQuantity());
+        existingRequest.setRequestedBy(request.getRequestedBy());
+        existingRequest.setRequestDate(request.getRequestDate());
+        existingRequest.setStatus(request.getStatus());
 
-            // Save and return the updated entity
-            return foodRequestRepository.save(existingRequest);
-        }
-
-        return null; // In a production app, throwing a custom ResourceNotFoundException is common here
+        return foodRequestRepository.save(existingRequest);
     }
 
     @Override
     public void deleteFoodRequest(Long id) {
+        if (!foodRequestRepository.existsById(id)) {
+            throw new ResourceNotFoundException("FoodRequest not found with id: " + id);
+        }
         foodRequestRepository.deleteById(id);
     }
 }
