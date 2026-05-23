@@ -1,78 +1,42 @@
 package com.greengrub.food_request.dto;
 
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import java.time.LocalDateTime;
+import com.greengrub.food_request.entity.FoodStatus;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Response shape for read endpoints. {@code images} is hydrated from image-service
+ * via a single {@code GetImagesByCreator(food_uuid)} gRPC call per food. Falls
+ * back to an empty list when the image-service circuit breaker is open.
+ */
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class FoodRequestDTO {
 
-    @NotBlank(message = "Food name cannot be blank")
+    private String id;
     private String foodName;
-
-    @NotNull(message = "Quantity is required")
-    @Min(value = 1, message = "Quantity must be at least 1")
-    private Integer quantity;
-
-    @NotBlank(message = "Requested by cannot be blank")
+    private QuantityDTO quantity;
     private String requestedBy;
+    private LocalDateTime requestedDate;
+    private LocalDateTime usedByDate;
+    private FoodStatus status;
 
-    @NotBlank(message = "Status cannot be blank")
-    private String status;
+    @Builder.Default
+    private List<String> imageIds = new ArrayList<>();
 
-    private LocalDateTime requestDate;
+    @Builder.Default
+    private List<ImageDTO> images = new ArrayList<>();
 
-    // Default constructor
-    public FoodRequestDTO() {
-    }
-
-    // Parameterized constructor
-    public FoodRequestDTO(String foodName, Integer quantity, String requestedBy, String status) {
-        this.foodName = foodName;
-        this.quantity = quantity;
-        this.requestedBy = requestedBy;
-        this.status = status;
-    }
-
-    // --- Getters and Setters ---
-
-    public String getFoodName() {
-        return foodName;
-    }
-
-    public void setFoodName(String foodName) {
-        this.foodName = foodName;
-    }
-
-    public Integer getQuantity() {
-        return quantity;
-    }
-
-    public void setQuantity(Integer quantity) {
-        this.quantity = quantity;
-    }
-
-    public String getRequestedBy() {
-        return requestedBy;
-    }
-
-    public void setRequestedBy(String requestedBy) {
-        this.requestedBy = requestedBy;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
-    public LocalDateTime getRequestDate() {
-        return requestDate;
-    }
-
-    public void setRequestDate(LocalDateTime requestDate) {
-        this.requestDate = requestDate;
-    }
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }
