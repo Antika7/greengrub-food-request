@@ -1,22 +1,37 @@
 package com.greengrub.food_request.exception;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.time.LocalDateTime;
 
+/**
+ * Uniform error envelope across REST endpoints, matching the platform shape
+ * used by gateway and user-service.
+ */
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class ErrorResponse {
+
+    private LocalDateTime timestamp;
     private int status;
     private String error;
     private String message;
-    private LocalDateTime timestamp;
+    private String path;
 
-    public ErrorResponse(int status, String error, String message) {
-        this.status = status;
-        this.error = error;
-        this.message = message;
-        this.timestamp = LocalDateTime.now();
+    public static ErrorResponse of(int status, String error, String message, String path) {
+        return ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(status)
+                .error(error)
+                .message(message)
+                .path(path)
+                .build();
     }
-
-    public int getStatus() { return status; }
-    public String getError() { return error; }
-    public String getMessage() { return message; }
-    public LocalDateTime getTimestamp() { return timestamp; }
 }
