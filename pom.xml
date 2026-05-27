@@ -24,6 +24,9 @@
         <protobuf.version>3.25.5</protobuf.version>
         <swagger.version>2.7.0</swagger.version>
         <resilience4j.version>2.2.0</resilience4j.version>
+        <spring-cloud-gcp.version>6.2.1</spring-cloud-gcp.version>
+        <spring-grpc.version>0.10.0</spring-grpc.version>
+        <spring-cloud.version>2025.0.0</spring-cloud.version>
     </properties>
 
     <repositories>
@@ -40,12 +43,21 @@
             <dependency>
                 <groupId>org.springframework.cloud</groupId>
                 <artifactId>spring-cloud-dependencies</artifactId>
-                <version>2025.0.0</version>
+                <version>${spring-cloud.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
 
-            <!-- gRPC -->
+            <!-- Spring Cloud GCP -->
+            <dependency>
+                <groupId>com.google.cloud</groupId>
+                <artifactId>spring-cloud-gcp-dependencies</artifactId>
+                <version>${spring-cloud-gcp.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <!-- Force all io.grpc artifacts to the same version as proto-contracts -->
             <dependency>
                 <groupId>io.grpc</groupId>
                 <artifactId>grpc-bom</artifactId>
@@ -76,6 +88,12 @@
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
 
+        <!-- Eureka Client -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+        </dependency>
+
         <!-- Actuator -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -93,6 +111,12 @@
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
+        </dependency>
+
+        <!-- Google Cloud SQL -->
+        <dependency>
+            <groupId>com.google.cloud</groupId>
+            <artifactId>spring-cloud-gcp-starter-sql-postgresql</artifactId>
         </dependency>
 
         <!-- Flyway (schema versioning, autoruns on startup) -->
@@ -238,8 +262,51 @@
                 </configuration>
             </plugin>
 
-        </plugins>
+            <!-- JaCoCo -->
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.12</version>
+                <executions>
+                    <execution>
+                        <id>prepare-agent</id>
+                        <goals><goal>prepare-agent</goal></goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>verify</phase>
+                        <goals><goal>report</goal></goals>
+                    </execution>
+                    <execution>
+                        <id>check</id>
+                        <phase>verify</phase>
+                        <goals><goal>check</goal></goals>
+                        <configuration>
+                            <rules>
+                                <rule>
+                                    <element>BUNDLE</element>
+                                    <limits>
+                                        <limit>
+                                            <counter>INSTRUCTION</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>0.80</minimum>
+                                        </limit>
+                                    </limits>
+                                </rule>
+                            </rules>
+                            <excludes>
+                                <exclude>com/greengrub/food_request/FoodRequestApplication.class</exclude>
+                                <exclude>com/greengrub/food_request/entity/FoodRequest.class</exclude>
+                                <exclude>com/greengrub/food_request/config/CorsConfig.class</exclude>
+                                <exclude>com/greengrub/proto/**</exclude>
+                            </excludes>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
 
+        </plugins>
+        <finalName>food-service</finalName>
     </build>
 
 </project>
