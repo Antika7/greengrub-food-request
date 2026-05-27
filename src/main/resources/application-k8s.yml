@@ -85,3 +85,15 @@ springdoc:
     path: /v3/api-docs
   swagger-ui:
     path: /swagger-ui.html
+
+logging:
+  level:
+    root: INFO
+    com.greengrub: DEBUG          # or INFO in production
+    org.springframework: INFO
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
+eureka:
+  client:
+    enabled: false
