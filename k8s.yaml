@@ -73,7 +73,7 @@ spec:
                   key: CORS_ALLOWED_ORIGINS
           resources:
             requests:
-              cpu:    "150m"
+              cpu:    "80m"
               memory: "250Mi"
             limits:
               cpu:    "350m"
