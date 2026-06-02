@@ -1,0 +1,146 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# Food Service  –  Deployment + HPA + Service
+# Namespace : services
+# Resource Plan : CPU req 150m / limit 350m | Mem req 250Mi / limit 500Mi
+# HPA : minReplicas 1, maxReplicas 4, CPU 65%, Memory 75%
+# NOTE: Running on self-managed kubeadm cluster (not GKE).
+#       Cloud SQL is reached via its public IP (SPRING_DATASOURCE_URL).
+#       Cloud SQL Auth Proxy sidecar is not used.
+#       HPA requires metrics-server to be installed on the cluster.
+# ──────────────────────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: food-service
+  namespace: services
+  labels:
+    app: food-service
+    component: backend
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: food-service
+  template:
+    metadata:
+      labels:
+        app: food-service
+        component: backend
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port:   "8081"
+        prometheus.io/path:   "/actuator/prometheus"
+    spec:
+      serviceAccountName: services-sa
+      containers:
+        - name: food-service
+          image: IMAGE_NAME
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8081
+              name: http
+            - containerPort: 9091
+              name: grpc
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: "k8s"
+            - name: SPRING_DATASOURCE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: food-service-secret
+                  key: SPRING_DATASOURCE_URL
+            - name: DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: food-service-secret
+                  key: DB_USERNAME
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: food-service-secret
+                  key: DB_PASSWORD
+            - name: IMAGE_SERVICE_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: services-config
+                  key: IMAGE_SERVICE_HOST
+            - name: CORS_ALLOWED_ORIGINS
+              valueFrom:
+                configMapKeyRef:
+                  name: cors-config
+                  key: CORS_ALLOWED_ORIGINS
+          resources:
+            requests:
+              cpu:    "150m"
+              memory: "250Mi"
+            limits:
+              cpu:    "350m"
+              memory: "500Mi"
+          startupProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8081
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            failureThreshold: 18
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8081
+            initialDelaySeconds: 0
+            periodSeconds: 20
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8081
+            initialDelaySeconds: 0
+            periodSeconds: 10
+            failureThreshold: 3
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: food-service-hpa
+  namespace: services
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: food-service
+  minReplicas: 1
+  maxReplicas: 1
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 65
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 75
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: food-service
+  namespace: services
+  labels:
+    app: food-service
+spec:
+  selector:
+    app: food-service
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8081
+    - name: grpc
+      port: 9091
+      targetPort: 9091
+  type: ClusterIP

@@ -117,7 +117,8 @@ public class ImageServiceClient {
     private static ImageDTO toDto(Image proto) {
         return ImageDTO.builder()
                 .id(proto.getImageId())
-                .url(proto.hasImageUrl() ? proto.getImageUrl() : null)
+                .url((proto.hasImageUrl() && !proto.getImageUrl().trim().isEmpty()) ? proto.getImageUrl() : null)
+                .image_data((proto.hasImageData()  && !proto.getImageData().isEmpty())? proto.getImageData().toByteArray() :  null)
                 .fileName(proto.getFileName())
                 .contentType(proto.hasContentType() ? proto.getContentType() : null)
                 .build();

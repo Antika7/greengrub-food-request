@@ -180,15 +180,15 @@ public class FoodRequestServiceImpl implements FoodRequestService {
      * Convenience wrapper for single-food hydration. Falls back to an empty list
      * on circuit-open or timeout — degraded UX (no thumbnail), not a 5xx.
      */
-    private List<ImageDTO> hydrateImages(String foodId) {
+    private List<ImageDTO> hydrateImages(String creatorId) {
         try {
-            return imageServiceClient.getImagesByCreator(foodId).get();
+            return imageServiceClient.getImagesByCreator(creatorId).get();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             return List.of();
         } catch (Exception e) {
-            log.warn("Image hydration failed for foodId {} — falling back to empty: {}",
-                    foodId, e.getMessage());
+            log.warn("Image hydration failed for creatorId {} — falling back to empty: {}",
+                    creatorId, e.getMessage());
             return List.of();
         }
     }
