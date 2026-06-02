@@ -16,4 +16,5 @@ public class ImageDTO {
     private String url;
     private String fileName;
     private String contentType;
+    private byte[] image_data;
 }

@@ -1,13 +1,12 @@
 spring:
-  # Cloud SQL Postgres connection (private IP via Cloud SQL Auth, no public IP needed)
+  # Direct JDBC connection to Cloud SQL via public IP (Cloud SQL Auth Proxy not used)
   cloud:
     gcp:
       sql:
-        enabled: true
-        database-name: ${FOOD_DATABASE_NAME:foods}
-        instance-connection-name: ${CLOUD_SQL_INSTANCE} # format: project:region:instance# format: project:region:instance
+        enabled: false   # Cloud SQL auto-config disabled; using direct JDBC URL
 
   datasource:
+    url: ${SPRING_DATASOURCE_URL}
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
 
