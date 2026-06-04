@@ -35,6 +35,14 @@ public class FoodRequestController {
         return ResponseEntity.status(HttpStatus.CREATED).body(foodRequestService.create(dto));
     }
 
+    @Operation(summary = "Get all food requests (paginated)")
+    @GetMapping
+    public ResponseEntity<Page<FoodRequestDTO>> getAll(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return ResponseEntity.ok(foodRequestService.getAll(page, size));
+    }
+
     @Operation(summary = "Get a food request by id (with hydrated images)")
     @GetMapping("/{id}")
     public ResponseEntity<FoodRequestDTO> getById(@PathVariable String id) {

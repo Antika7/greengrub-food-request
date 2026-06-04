@@ -83,6 +83,13 @@ public class FoodRequestServiceImpl implements FoodRequestService {
 
     @Override
     @Transactional(readOnly = true)
+    public Page<FoodRequestDTO> getAll(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return findAll(pageable).map(food -> toDto(food, hydrateImages(food.getId())));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public Page<FoodRequestDTO> getByUser(String userId, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         Page<FoodRequest> rows = findByUser(userId, pageable);
@@ -157,6 +164,12 @@ public class FoodRequestServiceImpl implements FoodRequestService {
     private FoodRequest findById(String id) {
         return repository.findById(id)
                 .orElseThrow(() -> new FoodNotFoundException(id));
+    }
+
+    @Retry(name = "dbRetry")
+    @CircuitBreaker(name = "dbBreaker")
+    private Page<FoodRequest> findAll(Pageable pageable) {
+        return repository.findAll(pageable);
     }
 
     @Retry(name = "dbRetry")
