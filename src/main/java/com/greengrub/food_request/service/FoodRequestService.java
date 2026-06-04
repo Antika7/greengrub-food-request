@@ -13,6 +13,8 @@ public interface FoodRequestService {
 
     FoodRequestDTO getById(String id);
 
+    Page<FoodRequestDTO> getAll(int page, int size);
+
     Page<FoodRequestDTO> getByUser(String userId, int page, int size);
 
     List<FoodRequestDTO> getByIds(List<String> ids);
