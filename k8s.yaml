@@ -67,11 +67,6 @@ spec:
                 configMapKeyRef:
                   name: services-config
                   key: IMAGE_SERVICE_HOST
-            - name: CORS_ALLOWED_ORIGINS
-              valueFrom:
-                configMapKeyRef:
-                  name: cors-config
-                  key: CORS_ALLOWED_ORIGINS
           resources:
             requests:
               cpu:    "50m"
