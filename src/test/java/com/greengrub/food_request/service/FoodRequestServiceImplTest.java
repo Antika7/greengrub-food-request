@@ -154,6 +154,29 @@ class FoodRequestServiceImplTest {
         assertThat(result.getImages()).isEmpty();
     }
 
+    // ── getAll ────────────────────────────────────────────────────────────────
+
+    @Test
+    void getAll_returnsPaginatedResults() {
+        var page = new PageImpl<>(List.of(sampleEntity), PageRequest.of(0, 20), 1);
+        when(repository.findAll(any(org.springframework.data.domain.Pageable.class))).thenReturn(page);
+
+        var result = service.getAll(0, 20);
+
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getTotalElements()).isEqualTo(1);
+    }
+
+    @Test
+    void getAll_emptyPage_returnsEmpty() {
+        var page = new PageImpl<FoodRequest>(List.of(), PageRequest.of(0, 20), 0);
+        when(repository.findAll(any(org.springframework.data.domain.Pageable.class))).thenReturn(page);
+
+        var result = service.getAll(0, 20);
+
+        assertThat(result.getContent()).isEmpty();
+    }
+
     // ── getByUser ─────────────────────────────────────────────────────────────
 
     @Test

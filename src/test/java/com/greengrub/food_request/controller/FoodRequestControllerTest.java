@@ -103,6 +103,39 @@ class FoodRequestControllerTest {
         verify(foodRequestService).getById("food-XYZ");
     }
 
+    // ── getAll ────────────────────────────────────────────────────────────────
+
+    @Test
+    void getAll_returns200() {
+        var page = new PageImpl<>(List.of(sampleDto), PageRequest.of(0, 20), 1);
+        when(foodRequestService.getAll(0, 20)).thenReturn(page);
+
+        ResponseEntity<?> response = controller.getAll(0, 20);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+    }
+
+    @Test
+    void getAll_delegatesToService() {
+        var page = new PageImpl<>(List.of(sampleDto), PageRequest.of(0, 20), 1);
+        when(foodRequestService.getAll(0, 20)).thenReturn(page);
+
+        controller.getAll(0, 20);
+
+        verify(foodRequestService).getAll(0, 20);
+    }
+
+    @Test
+    void getAll_returnsPageContent() {
+        var page = new PageImpl<>(List.of(sampleDto), PageRequest.of(0, 20), 1);
+        when(foodRequestService.getAll(0, 20)).thenReturn(page);
+
+        ResponseEntity<org.springframework.data.domain.Page<FoodRequestDTO>> response = controller.getAll(0, 20);
+
+        assertThat(response.getBody().getContent()).hasSize(1);
+        assertThat(response.getBody().getContent().get(0).getId()).isEqualTo("food-001");
+    }
+
     // ── getByUser ─────────────────────────────────────────────────────────────
 
     @Test
