@@ -1,6 +1,7 @@
 package com.greengrub.food_request.service.impl;
 
 import com.greengrub.food_request.client.ImageServiceClient;
+import com.greengrub.food_request.dto.ContributeDTO;
 import com.greengrub.food_request.dto.CreateFoodRequestDTO;
 import com.greengrub.food_request.dto.FoodRequestDTO;
 import com.greengrub.food_request.dto.ImageDTO;
@@ -22,6 +23,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -140,6 +142,44 @@ public class FoodRequestServiceImpl implements FoodRequestService {
         entity.setStatus(dto.getStatus());
         FoodRequest saved = saveFood(entity);
         return toDto(saved, hydrateImages(id));
+    }
+
+    @Override
+    @Transactional
+    public FoodRequestDTO uploadImage(String id, MultipartFile file) {
+        FoodRequest entity = findById(id);
+        try {
+            List<String> newIds = imageServiceClient.uploadImages(
+                    id,
+                    List.of(file.getBytes()),
+                    file.getOriginalFilename(),
+                    file.getContentType()
+            ).get();
+            entity.getImageIds().addAll(newIds);
+            entity = saveFood(entity);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new ImageUploadFailedException("Image upload interrupted", e);
+        } catch (ExecutionException e) {
+            Throwable cause = e.getCause() != null ? e.getCause() : e;
+            throw new ImageUploadFailedException("Image upload failed: " + cause.getMessage(), cause);
+        } catch (java.io.IOException e) {
+            throw new ImageUploadFailedException("Failed to read uploaded file: " + e.getMessage(), e);
+        }
+        return toDto(entity, hydrateImages(id));
+    }
+
+    @Override
+    @Transactional
+    public FoodRequestDTO contribute(String id, ContributeDTO dto) {
+        FoodRequest entity = findById(id);
+        if (entity.getStatus() == FoodStatus.PENDING) {
+            entity.setStatus(FoodStatus.APPROVED);
+            entity = saveFood(entity);
+        }
+        log.info("Contribution received for food request {}: contributor={}, quantity={}",
+                id, dto.getContributorName(), dto.getQuantityOffered());
+        return toDto(entity, hydrateImages(id));
     }
 
     @Override

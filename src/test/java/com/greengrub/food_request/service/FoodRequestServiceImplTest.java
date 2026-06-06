@@ -1,6 +1,7 @@
 package com.greengrub.food_request.service;
 
 import com.greengrub.food_request.client.ImageServiceClient;
+import com.greengrub.food_request.dto.ContributeDTO;
 import com.greengrub.food_request.dto.CreateFoodRequestDTO;
 import com.greengrub.food_request.dto.FoodRequestDTO;
 import com.greengrub.food_request.dto.QuantityDTO;
@@ -13,6 +14,8 @@ import com.greengrub.food_request.exception.FoodNotFoundException;
 import com.greengrub.food_request.exception.ImageUploadFailedException;
 import com.greengrub.food_request.repository.FoodRequestRepository;
 import com.greengrub.food_request.service.impl.FoodRequestServiceImpl;
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.web.multipart.MultipartFile;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -319,5 +322,98 @@ class FoodRequestServiceImplTest {
         assertThat(result).hasSize(2);
         assertThat(result.get(0).getId()).isEqualTo("food-001");
         assertThat(result.get(1).getId()).isEqualTo("food-002");
+    }
+
+    // ── uploadImage ───────────────────────────────────────────────────────────
+
+    @Test
+    void uploadImage_success_appendsImageIdAndReturnsDto() {
+        when(repository.findById("food-001")).thenReturn(Optional.of(sampleEntity));
+        when(imageServiceClient.uploadImages(eq("food-001"), anyList(), eq("photo.jpg"), eq("image/jpeg")))
+                .thenReturn(CompletableFuture.completedFuture(List.of("img-new")));
+        when(repository.save(any(FoodRequest.class))).thenReturn(sampleEntity);
+
+        MultipartFile file = new MockMultipartFile("file", "photo.jpg", "image/jpeg", new byte[]{1, 2, 3});
+        FoodRequestDTO result = service.uploadImage("food-001", file);
+
+        assertThat(result).isNotNull();
+        verify(imageServiceClient).uploadImages(eq("food-001"), anyList(), eq("photo.jpg"), eq("image/jpeg"));
+        verify(repository).save(argThat(e -> e.getImageIds().contains("img-new")));
+    }
+
+    @Test
+    void uploadImage_foodNotFound_throwsFoodNotFoundException() {
+        when(repository.findById("missing")).thenReturn(Optional.empty());
+
+        MultipartFile file = new MockMultipartFile("file", "photo.jpg", "image/jpeg", new byte[]{1});
+        assertThatThrownBy(() -> service.uploadImage("missing", file))
+                .isInstanceOf(FoodNotFoundException.class);
+    }
+
+    @Test
+    void uploadImage_grpcFails_throwsImageUploadFailedException() {
+        when(repository.findById("food-001")).thenReturn(Optional.of(sampleEntity));
+        CompletableFuture<List<String>> failed = new CompletableFuture<>();
+        failed.completeExceptionally(new RuntimeException("gRPC error"));
+        when(imageServiceClient.uploadImages(anyString(), anyList(), any(), any())).thenReturn(failed);
+
+        MultipartFile file = new MockMultipartFile("file", "photo.jpg", "image/jpeg", new byte[]{1});
+        assertThatThrownBy(() -> service.uploadImage("food-001", file))
+                .isInstanceOf(ImageUploadFailedException.class)
+                .hasMessageContaining("gRPC error");
+    }
+
+    // ── contribute ────────────────────────────────────────────────────────────
+
+    @Test
+    void contribute_pendingRequest_transitionsToApprovedAndReturnsDto() {
+        when(repository.findById("food-001")).thenReturn(Optional.of(sampleEntity));
+        FoodRequest approvedEntity = FoodRequest.builder()
+                .id("food-001").foodName("Rice")
+                .quantity(new Quantity(new BigDecimal("5.0"), Unit.KG))
+                .requestedBy("user-001")
+                .status(FoodStatus.APPROVED)
+                .imageIds(new ArrayList<>())
+                .createdAt(LocalDateTime.of(2024, 1, 10, 9, 0))
+                .updatedAt(LocalDateTime.of(2024, 1, 10, 9, 0))
+                .build();
+        when(repository.save(any(FoodRequest.class))).thenReturn(approvedEntity);
+
+        ContributeDTO dto = ContributeDTO.builder()
+                .contributorName("Alice")
+                .quantityOffered(2.0)
+                .additionalDetails("Available on weekends")
+                .build();
+        FoodRequestDTO result = service.contribute("food-001", dto);
+
+        assertThat(result).isNotNull();
+        verify(repository).save(argThat(e -> e.getStatus() == FoodStatus.APPROVED));
+    }
+
+    @Test
+    void contribute_alreadyApproved_doesNotSaveAgain() {
+        sampleEntity.setStatus(FoodStatus.APPROVED);
+        when(repository.findById("food-001")).thenReturn(Optional.of(sampleEntity));
+
+        ContributeDTO dto = ContributeDTO.builder()
+                .contributorName("Bob")
+                .quantityOffered(1.0)
+                .build();
+        service.contribute("food-001", dto);
+
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void contribute_foodNotFound_throwsFoodNotFoundException() {
+        when(repository.findById("missing")).thenReturn(Optional.empty());
+
+        ContributeDTO dto = ContributeDTO.builder()
+                .contributorName("Alice")
+                .quantityOffered(1.0)
+                .build();
+        assertThatThrownBy(() -> service.contribute("missing", dto))
+                .isInstanceOf(FoodNotFoundException.class)
+                .hasMessageContaining("missing");
     }
 }
