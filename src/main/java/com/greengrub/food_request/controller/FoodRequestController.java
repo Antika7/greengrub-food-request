@@ -1,5 +1,6 @@
 package com.greengrub.food_request.controller;
 
+import com.greengrub.food_request.dto.ContributeDTO;
 import com.greengrub.food_request.dto.CreateFoodRequestDTO;
 import com.greengrub.food_request.dto.FoodRequestDTO;
 import com.greengrub.food_request.dto.UpdateFoodStatusDTO;
@@ -10,6 +11,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,7 +21,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 @Tag(name = "Food Requests", description = "Food request CRUD + status transitions")
 @RestController
@@ -64,6 +68,22 @@ public class FoodRequestController {
             @PathVariable String id,
             @Valid @RequestBody UpdateFoodStatusDTO dto) {
         return ResponseEntity.ok(foodRequestService.updateStatus(id, dto));
+    }
+
+    @Operation(summary = "Upload an image for a food request")
+    @PostMapping(value = "/{id}/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<FoodRequestDTO> uploadImage(
+            @PathVariable String id,
+            @RequestPart("file") MultipartFile file) {
+        return ResponseEntity.ok(foodRequestService.uploadImage(id, file));
+    }
+
+    @Operation(summary = "Submit a contribution offer for a food request")
+    @PostMapping("/{id}/contribute")
+    public ResponseEntity<FoodRequestDTO> contribute(
+            @PathVariable String id,
+            @Valid @RequestBody ContributeDTO dto) {
+        return ResponseEntity.ok(foodRequestService.contribute(id, dto));
     }
 
     @Operation(summary = "Delete a food request")

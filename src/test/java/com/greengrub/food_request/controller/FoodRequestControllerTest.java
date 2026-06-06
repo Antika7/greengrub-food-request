@@ -1,5 +1,6 @@
 package com.greengrub.food_request.controller;
 
+import com.greengrub.food_request.dto.ContributeDTO;
 import com.greengrub.food_request.dto.CreateFoodRequestDTO;
 import com.greengrub.food_request.dto.FoodRequestDTO;
 import com.greengrub.food_request.dto.QuantityDTO;
@@ -17,6 +18,8 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -182,5 +185,72 @@ class FoodRequestControllerTest {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
         verify(foodRequestService).delete("food-001");
+    }
+
+    // ── uploadImage ───────────────────────────────────────────────────────────
+
+    @Test
+    void uploadImage_returns200WithBody() {
+        MultipartFile file = new MockMultipartFile("file", "photo.jpg", "image/jpeg", new byte[]{1, 2, 3});
+        when(foodRequestService.uploadImage("food-001", file)).thenReturn(sampleDto);
+
+        ResponseEntity<FoodRequestDTO> response = controller.uploadImage("food-001", file);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody().getId()).isEqualTo("food-001");
+    }
+
+    @Test
+    void uploadImage_delegatesToService() {
+        MultipartFile file = new MockMultipartFile("file", "img.png", "image/png", new byte[]{9});
+        when(foodRequestService.uploadImage(eq("food-001"), any(MultipartFile.class))).thenReturn(sampleDto);
+
+        controller.uploadImage("food-001", file);
+
+        verify(foodRequestService).uploadImage("food-001", file);
+    }
+
+    // ── contribute ────────────────────────────────────────────────────────────
+
+    @Test
+    void contribute_returns200WithBody() {
+        ContributeDTO dto = ContributeDTO.builder()
+                .contributorName("Alice")
+                .quantityOffered(2.0)
+                .additionalDetails("Available Mondays")
+                .build();
+        sampleDto.setStatus(FoodStatus.APPROVED);
+        when(foodRequestService.contribute("food-001", dto)).thenReturn(sampleDto);
+
+        ResponseEntity<FoodRequestDTO> response = controller.contribute("food-001", dto);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody().getStatus()).isEqualTo(FoodStatus.APPROVED);
+    }
+
+    @Test
+    void contribute_delegatesToService() {
+        ContributeDTO dto = ContributeDTO.builder()
+                .contributorName("Bob")
+                .quantityOffered(1.0)
+                .build();
+        when(foodRequestService.contribute(eq("food-001"), any(ContributeDTO.class))).thenReturn(sampleDto);
+
+        controller.contribute("food-001", dto);
+
+        verify(foodRequestService).contribute("food-001", dto);
+    }
+
+    @Test
+    void contribute_noDetails_returnsOk() {
+        ContributeDTO dto = ContributeDTO.builder()
+                .contributorName("Carol")
+                .quantityOffered(3.0)
+                .build();
+        when(foodRequestService.contribute(eq("food-001"), any())).thenReturn(sampleDto);
+
+        ResponseEntity<FoodRequestDTO> response = controller.contribute("food-001", dto);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     }
 }
